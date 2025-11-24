@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional, Any
 from database.firebase_client import get_firestore_client
-
+from models.product import Product
+from models.user import User
 
 class FirebaseProductCRUD:
     def __init__(self):
@@ -36,6 +37,32 @@ class FirebaseProductCRUD:
             return False
         doc_ref.delete()
         return True
+
+    # --- Helpers de modelos de dominio ---
+
+    def get_all_models(self) -> List[Product]:
+        """Obtiene todos los productos como modelos de dominio Product."""
+        data_list = self.get_all()
+        return [Product.from_dict(data) for data in data_list]
+
+    def get_model_by_id(self, product_id: str) -> Optional[Product]:
+        """Obtiene un producto como Product o None si no existe."""
+        data = self.get_by_id(product_id)
+        if data is None:
+            return None
+        return Product.from_dict(data)
+
+    def create_model(self, product: Product) -> Product:
+        """Crea un producto a partir de un modelo de dominio y devuelve el modelo creado."""
+        created_data = self.create(product.to_dict())
+        return Product.from_dict(created_data)
+
+    def update_model(self, product_id: str, product: Product) -> Optional[Product]:
+        """Actualiza un producto usando un modelo de dominio y devuelve el modelo actualizado."""
+        updated_data = self.update(product_id, product.to_dict())
+        if updated_data is None:
+            return None
+        return Product.from_dict(updated_data)
 
 
 class FirebaseUserCRUD:
@@ -78,6 +105,53 @@ class FirebaseUserCRUD:
             return False
         doc_ref.delete()
         return True
+
+    # --- Helpers de modelos de dominio ---
+
+    def get_all_models(self) -> List[User]:
+        """Obtiene todos los usuarios como modelos de dominio User."""
+        data_list = self.get_all()
+        users: List[User] = []
+        for data in data_list:
+            # Mapear password_hash almacenado a hashed_password del dominio
+            mapped = {
+                **data,
+                "hashed_password": data.get("password_hash"),
+            }
+            users.append(User.from_dict(mapped))
+        return users
+
+    def get_model_by_id(self, user_id: str) -> Optional[User]:
+        """Obtiene un usuario como User o None si no existe."""
+        data = self.get_by_id(user_id)
+        if data is None:
+            return None
+        mapped = {**data, "hashed_password": data.get("password_hash")}
+        return User.from_dict(mapped)
+
+    def create_model(self, user: User) -> User:
+        """Crea un usuario a partir de un modelo de dominio y devuelve el modelo creado.
+
+        Nota: se espera que User.hashed_password ya contenga el hash.
+        """
+        data: Dict[str, Any] = user.to_dict(include_id=False)
+        # Renombrar hashed_password -> password_hash para almacenamiento
+        if "hashed_password" in data:
+            data["password_hash"] = data.pop("hashed_password")
+        created = self.create(data)
+        mapped = {**created, "hashed_password": created.get("password_hash")}
+        return User.from_dict(mapped)
+
+    def update_model(self, user_id: str, user: User) -> Optional[User]:
+        """Actualiza un usuario usando un modelo de dominio y devuelve el modelo actualizado."""
+        data: Dict[str, Any] = user.to_dict(include_id=False)
+        if "hashed_password" in data:
+            data["password_hash"] = data.pop("hashed_password")
+        updated = self.update(user_id, data)
+        if updated is None:
+            return None
+        mapped = {**updated, "hashed_password": updated.get("password_hash")}
+        return User.from_dict(mapped)
 
 
 class FirebasePatientCRUD:

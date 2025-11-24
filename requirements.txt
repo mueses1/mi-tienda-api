@@ -4,3 +4,5 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1
 firebase-admin==7.1.0
+python-multipart
+email-validator

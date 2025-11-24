@@ -11,15 +11,39 @@ user_crud = FirebaseUserCRUD()
 
 @router.get("/", response_model=List[UserInDB])
 def get_all_users():
-    return user_crud.get_all()
+    """Obtiene todos los usuarios usando modelos de dominio internamente.
+
+    La respuesta sigue siendo una lista de UserInDB.
+    """
+    users = user_crud.get_all_models()
+    # Convertir de modelo de dominio a dict compatible con UserInDB
+    return [
+        {
+            "id": u.id,
+            "email": u.email,
+            "name": u.name,
+            "role": u.role,
+        }
+        for u in users
+        if u.id is not None
+    ]
 
 
 @router.get("/{user_id}", response_model=UserInDB)
 def get_user(user_id: str):
-    user = user_crud.get_by_id(user_id)
-    if not user:
+    """Obtiene un usuario por id usando el modelo de dominio internamente.
+
+    Si no existe, devuelve 404 como antes.
+    """
+    user_model = user_crud.get_model_by_id(user_id)
+    if not user_model or user_model.id is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
-    return user
+    return {
+        "id": user_model.id,
+        "email": user_model.email,
+        "name": user_model.name,
+        "role": user_model.role,
+    }
 
 
 @router.post("/", response_model=UserInDB, status_code=status.HTTP_201_CREATED)

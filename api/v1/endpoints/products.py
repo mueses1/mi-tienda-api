@@ -15,15 +15,24 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.get("/", response_model=List[ProductInDB])
 def get_all_products():
-    return product_crud.get_all()
+    """Obtiene todos los productos usando los modelos de dominio internamente.
+
+    La respuesta sigue siendo una lista de ProductInDB para el cliente.
+    """
+    products = product_crud.get_all_models()
+    return [p.to_dict(include_id=True) for p in products]
 
 
 @router.get("/{product_id}", response_model=ProductInDB)
 def get_product(product_id: str):
-    product = product_crud.get_by_id(product_id)
-    if not product:
+    """Obtiene un producto por id usando el modelo de dominio internamente.
+
+    Si no se encuentra, devuelve 404 como antes.
+    """
+    product_model = product_crud.get_model_by_id(product_id)
+    if not product_model:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
-    return product
+    return product_model.to_dict(include_id=True)
 
 
 @router.post("/", response_model=ProductInDB, status_code=status.HTTP_201_CREATED)
