@@ -1,0 +1,8 @@
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Archivos de credenciales
+mi-tienda-api-a493a-69b5f6c36e6a.json
+*.service-account.json
