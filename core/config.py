@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde el archivo .env usando python-dotenv
+load_dotenv()
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Mi Tienda API"
