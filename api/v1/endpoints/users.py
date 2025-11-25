@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from schemas.user import UserInDB, UserCreate, UserUpdate
 from crud.firebase_crud import FirebaseUserCRUD
+from core.security import get_current_admin
 import hashlib
 
 router = APIRouter()
@@ -10,7 +11,7 @@ user_crud = FirebaseUserCRUD()
 
 
 @router.get("/", response_model=List[UserInDB])
-def get_all_users():
+def get_all_users(current_admin = Depends(get_current_admin)):
     """Obtiene todos los usuarios usando modelos de dominio internamente.
 
     La respuesta sigue siendo una lista de UserInDB.
@@ -30,7 +31,7 @@ def get_all_users():
 
 
 @router.get("/{user_id}", response_model=UserInDB)
-def get_user(user_id: str):
+def get_user(user_id: str, current_admin = Depends(get_current_admin)):
     """Obtiene un usuario por id usando el modelo de dominio internamente.
 
     Si no existe, devuelve 404 como antes.
@@ -47,7 +48,7 @@ def get_user(user_id: str):
 
 
 @router.post("/", response_model=UserInDB, status_code=status.HTTP_201_CREATED)
-def create_user(user: UserCreate):
+def create_user(user: UserCreate, current_admin = Depends(get_current_admin)):
     existing = user_crud.get_by_email(user.email)
     if existing:
         raise HTTPException(status_code=400, detail="Ya existe un usuario con ese email")
@@ -60,7 +61,7 @@ def create_user(user: UserCreate):
 
 
 @router.put("/{user_id}", response_model=UserInDB)
-def update_user(user_id: str, user_update: UserUpdate):
+def update_user(user_id: str, user_update: UserUpdate, current_admin = Depends(get_current_admin)):
     update_data = user_update.model_dump(exclude_unset=True, exclude={"password"})
     # Si viene nueva contraseña, actualizar hash
     if user_update.password is not None:
@@ -72,7 +73,7 @@ def update_user(user_id: str, user_update: UserUpdate):
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: str):
+def delete_user(user_id: str, current_admin = Depends(get_current_admin)):
     deleted = user_crud.delete(user_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")

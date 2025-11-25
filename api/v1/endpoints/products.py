@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends
 from typing import List, Optional
 from schemas.product import ProductInDB, ProductCreate, ProductUpdate
 from crud.firebase_crud import FirebaseProductCRUD
+from core.security import get_current_admin
+
 from pathlib import Path
 import os
 import shutil
@@ -36,7 +38,8 @@ def get_product(product_id: str):
 
 
 @router.post("/", response_model=ProductInDB, status_code=status.HTTP_201_CREATED)
-def create_product(product: ProductCreate):
+def create_product(product: ProductCreate, current_admin = Depends(get_current_admin)):
+
     new_product = product_crud.create(product.model_dump())
     return new_product
 
@@ -48,7 +51,9 @@ async def create_product_with_image(
     stock: int = Form(...),
     category: str = Form(...),
     file: Optional[UploadFile] = File(None),
+    current_admin = Depends(get_current_admin),
 ):
+
     data = {
         "name": name,
         "price": price,
@@ -81,7 +86,8 @@ async def create_product_with_image(
 
 
 @router.put("/{product_id}", response_model=ProductInDB)
-def update_product(product_id: str, product_update: ProductUpdate):
+def update_product(product_id: str, product_update: ProductUpdate, current_admin = Depends(get_current_admin)):
+
     update_data = product_update.model_dump(exclude_unset=True)
     updated = product_crud.update(product_id, update_data)
     if not updated:
@@ -90,7 +96,8 @@ def update_product(product_id: str, product_update: ProductUpdate):
 
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_product(product_id: str):
+def delete_product(product_id: str, current_admin = Depends(get_current_admin)):
+
     deleted = product_crud.delete(product_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Producto no encontrado")
@@ -98,7 +105,8 @@ def delete_product(product_id: str):
 
 
 @router.post("/{product_id}/image", response_model=ProductInDB)
-def upload_product_image(product_id: str, file: UploadFile = File(...)):
+def upload_product_image(product_id: str, file: UploadFile = File(...), current_admin = Depends(get_current_admin)):
+
     product = product_crud.get_by_id(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Producto no encontrado")

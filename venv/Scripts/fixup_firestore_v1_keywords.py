@@ -1,4 +1,4 @@
-#!D:\mi-tienda-api\venv\Scripts\python.exe
+#!C:\Users\User\mi-tienda-api\venv\Scripts\python.exe
 # -*- coding: utf-8 -*-
 # Copyright 2025 Google LLC
 #
