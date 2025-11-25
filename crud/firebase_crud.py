@@ -280,3 +280,49 @@ class FirebaseSettingsCRUD:
         doc_ref.set(data, merge=True)
         saved = doc_ref.get().to_dict() or {}
         return saved
+
+
+class FirebaseCartCRUD:
+    def __init__(self):
+        self._db = get_firestore_client()
+        self._collection = self._db.collection("carts")
+
+    def get_cart(self, user_id: str) -> Optional[dict]:
+        doc = self._collection.document(user_id).get()
+        if not doc.exists:
+            return {"user_id": user_id, "items": []}
+        data = doc.to_dict() or {}
+        data.setdefault("user_id", user_id)
+        data.setdefault("items", [])
+        return data
+
+    def add_or_update_item(self, user_id: str, item: Dict[str, Any]) -> dict:
+        cart = self.get_cart(user_id)
+        items = cart.get("items", [])
+        product_id = item.get("product_id")
+        if not product_id:
+            raise ValueError("product_id es requerido para el item del carrito")
+        updated = False
+        for existing in items:
+            if existing.get("product_id") == product_id:
+                quantity = existing.get("quantity", 1) + item.get("quantity", 1)
+                existing.update({**item, "quantity": quantity})
+                updated = True
+                break
+        if not updated:
+            if "quantity" not in item:
+                item["quantity"] = 1
+            items.append(item)
+        self._collection.document(user_id).set({"items": items}, merge=True)
+        return {"user_id": user_id, "items": items}
+
+    def remove_item(self, user_id: str, product_id: str) -> dict:
+        cart = self.get_cart(user_id)
+        items = cart.get("items", [])
+        items = [i for i in items if i.get("product_id") != product_id]
+        self._collection.document(user_id).set({"items": items}, merge=True)
+        return {"user_id": user_id, "items": items}
+
+    def clear_cart(self, user_id: str) -> dict:
+        self._collection.document(user_id).set({"items": []}, merge=True)
+        return {"user_id": user_id, "items": []}

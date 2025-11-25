@@ -1,6 +1,6 @@
 # Entornos y dependencias
 venv/
-__pycache__/
+_pycache_/
 *.pyc
 
 # Variables de entorno
@@ -9,4 +9,3 @@ __pycache__/
 # Credenciales
 *.json
 !static/*.json
-
