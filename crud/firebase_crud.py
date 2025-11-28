@@ -326,3 +326,24 @@ class FirebaseCartCRUD:
     def clear_cart(self, user_id: str) -> dict:
         self._collection.document(user_id).set({"items": []}, merge=True)
         return {"user_id": user_id, "items": []}
+
+
+class FirebaseOrderCRUD:
+    def __init__(self):
+        self._db = get_firestore_client()
+        self._collection = self._db.collection("orders")
+
+    def create(self, data: Dict[str, Any]) -> dict:
+        doc_ref = self._collection.document()
+        doc_ref.set(data)
+        return {**data, "id": doc_ref.id}
+
+    def get_by_id(self, order_id: str) -> Optional[dict]:
+        doc = self._collection.document(order_id).get()
+        if not doc.exists:
+            return None
+        return {**doc.to_dict(), "id": doc.id}
+
+    def get_all_by_user(self, user_id: str) -> List[dict]:
+        docs = self._collection.where("user_id", "==", user_id).stream()
+        return [{**d.to_dict(), "id": d.id} for d in docs]
