@@ -297,11 +297,12 @@ class FirebaseCartCRUD:
         return data
 
     def add_or_update_item(self, user_id: str, item: Dict[str, Any]) -> dict:
-        cart = self.get_cart(user_id)
-        items = cart.get("items", [])
+        cart: Dict[str, Any] = self.get_cart(user_id)
+        items: List[Dict[str, Any]] = cart.get("items", [])
         product_id = item.get("product_id")
         if not product_id:
             raise ValueError("product_id es requerido para el item del carrito")
+
         updated = False
         for existing in items:
             if existing.get("product_id") == product_id:
